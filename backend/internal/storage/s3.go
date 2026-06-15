@@ -46,6 +46,11 @@ func InitS3() *S3 {
 	var cfg aws.Config
 	var err error
 
+	region := os.Getenv("S3_REGION")
+	if region == "" {
+		region = "ap-south-1"
+	}
+
 	// In development, DEV_S3_URL acts as the Minio endpoint.
 	endpoint := os.Getenv("S3_ENDPOINT")
 	if isDev() && endpoint == "" {
@@ -53,13 +58,7 @@ func InitS3() *S3 {
 	}
 
 	if endpoint != "" {
-		// Local dev / Minio: use custom endpoint + static credentials.
-		resolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, option ...any) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				URL:           endpoint,
-				SigningRegion: os.Getenv("S3_REGION"),
-			}, nil
-		})
+		// Local dev / Minio: use static credentials.
 		username := os.Getenv("S3_USERNAME")
 		password := os.Getenv("S3_PASSWORD")
 		if isDev() {
@@ -71,17 +70,13 @@ func InitS3() *S3 {
 			}
 		}
 		cfg, err = config.LoadDefaultConfig(context.TODO(),
-			config.WithEndpointResolverWithOptions(resolver),
+			config.WithRegion(region),
 			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
 				username, password, os.Getenv("S3_SESSION"),
 			)),
 		)
 	} else {
 		// Real AWS: SDK picks up AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY from env.
-		region := os.Getenv("S3_REGION")
-		if region == "" {
-			region = "ap-south-1"
-		}
 		cfg, err = config.LoadDefaultConfig(context.TODO(),
 			config.WithRegion(region),
 		)
@@ -97,6 +92,9 @@ func InitS3() *S3 {
 		Bucket: bucketName(),
 		S3: s3.NewFromConfig(cfg, func(o *s3.Options) {
 			o.UsePathStyle = usePathStyle
+			if endpoint != "" {
+				o.BaseEndpoint = aws.String(endpoint)
+			}
 		}),
 	}
 }

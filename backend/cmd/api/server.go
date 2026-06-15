@@ -10,10 +10,10 @@ import (
 
 	"github.com/dhruvpurohit2k/expressions-india-backend/internal/almanac"
 	"github.com/dhruvpurohit2k/expressions-india-backend/internal/article"
-	certificateapplication "github.com/dhruvpurohit2k/expressions-india-backend/internal/certificateapplication"
 	"github.com/dhruvpurohit2k/expressions-india-backend/internal/audience"
 	"github.com/dhruvpurohit2k/expressions-india-backend/internal/auth"
 	"github.com/dhruvpurohit2k/expressions-india-backend/internal/brochure"
+	certificateapplication "github.com/dhruvpurohit2k/expressions-india-backend/internal/certificateapplication"
 	"github.com/dhruvpurohit2k/expressions-india-backend/internal/course"
 	"github.com/dhruvpurohit2k/expressions-india-backend/internal/enquiry"
 	"github.com/dhruvpurohit2k/expressions-india-backend/internal/event"
@@ -34,21 +34,21 @@ import (
 )
 
 type Server struct {
-	r                        *gin.Engine
-	db                       *gorm.DB
-	s3                       *storage.S3
-	eventController          *event.Controller
-	promotionController      *promotion.Controller
-	journalController        *journal.Controller
-	podcastController        *podcast.Controller
-	enquiryController        *enquiry.Controller
-	articleController        *article.Controller
-	audienceController       *audience.Controller
-	latestActivityController *latestactivity.Controller
-	courseController         *course.Controller
-	authController           *auth.Controller
-	teamController           *team.Controller
-	uploadController         *upload.Controller
+	r                                *gin.Engine
+	db                               *gorm.DB
+	s3                               *storage.S3
+	eventController                  *event.Controller
+	promotionController              *promotion.Controller
+	journalController                *journal.Controller
+	podcastController                *podcast.Controller
+	enquiryController                *enquiry.Controller
+	articleController                *article.Controller
+	audienceController               *audience.Controller
+	latestActivityController         *latestactivity.Controller
+	courseController                 *course.Controller
+	authController                   *auth.Controller
+	teamController                   *team.Controller
+	uploadController                 *upload.Controller
 	almanacController                *almanac.Controller
 	brochureController               *brochure.Controller
 	certificateApplicationController *certificateapplication.Controller
@@ -63,7 +63,7 @@ func initServer() *Server {
 	db := storage.InitDB()
 	s3 := storage.InitS3()
 
-	if os.Getenv("DB_FRESH_START") == "true" && os.Getenv("APP_ENV") != "production" {
+	if os.Getenv("DB_FRESH_START") == "true" && os.Getenv("APP_ENV") == "development" {
 		db.Migrator().DropTable(
 			&models.User{},
 			&models.Event{},
@@ -109,7 +109,6 @@ func initServer() *Server {
 	}
 
 	models.SeedAudience(db)
-	// models.SeedPromotions(db, s3)
 
 	eventService := event.NewService(db, s3)
 	eventController := event.NewController(eventService)
@@ -178,21 +177,21 @@ func initServer() *Server {
 	r.Use(cors.New(corsConfig))
 	r.Use(MaxBodyBytes(2 << 20)) // 2 MB cap on JSON/form bodies (file uploads go to S3 directly)
 	return &Server{
-		r:                        r,
-		db:                       db,
-		s3:                       s3,
-		eventController:          eventController,
-		promotionController:      promotionController,
-		journalController:        journalsController,
-		podcastController:        podcastController,
-		enquiryController:        enquiryController,
-		articleController:        articleController,
-		audienceController:       audienceController,
-		latestActivityController: latestActivityController,
-		courseController:         courseController,
-		authController:           authController,
-		teamController:           teamController,
-		uploadController:         uploadController,
+		r:                                r,
+		db:                               db,
+		s3:                               s3,
+		eventController:                  eventController,
+		promotionController:              promotionController,
+		journalController:                journalsController,
+		podcastController:                podcastController,
+		enquiryController:                enquiryController,
+		articleController:                articleController,
+		audienceController:               audienceController,
+		latestActivityController:         latestActivityController,
+		courseController:                 courseController,
+		authController:                   authController,
+		teamController:                   teamController,
+		uploadController:                 uploadController,
 		almanacController:                almanacController,
 		brochureController:               brochureController,
 		certificateApplicationController: certAppController,

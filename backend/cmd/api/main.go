@@ -28,10 +28,8 @@ func main() {
 
 	server := initServer()
 	server.SetupRoutes()
-	if os.Getenv("SEED_DB") == "true" {
-		if err := SeedAdminUser(server); err != nil {
-			log.Println("Failed to seed admin user", err.Error(), ".\nSkipping")
-		}
+	if err := SeedAdminUser(server); err != nil {
+		log.Fatal("Failed to seed admin user", err.Error(), ".\nSkipping")
 	}
 
 	port := os.Getenv("PORT")
