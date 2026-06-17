@@ -157,7 +157,13 @@ func initServer() *Server {
 	revenueCatClient := purchase.NewRevenueCatClient()
 	purchaseController := purchase.NewController(revenueCatClient, courseService)
 
-	r := gin.Default()
+	var r *gin.Engine
+	if env := os.Getenv("APP_ENV"); env == "production" || env == "staging" {
+		r = gin.New()
+		r.Use(gin.Recovery())
+	} else {
+		r = gin.Default()
+	}
 	corsConfig := cors.Config{
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
