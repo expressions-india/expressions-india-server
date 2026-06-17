@@ -23,6 +23,13 @@ declare module "@tanstack/react-router" {
 
 const rootElement = document.getElementById("app")!;
 const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes: keep cache fresh to avoid immediate refetching
+      refetchOnWindowFocus: false, // disable automatic refetch on window focus
+      refetchOnReconnect: false,  // disable automatic refetch on network reconnect
+    },
+  },
   queryCache: new QueryCache({
     onError: (error: Error) => {
       toast.error(error.message);
