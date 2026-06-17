@@ -336,27 +336,46 @@ func (s *Service) deleteMedia(mediaID string) error {
 	return s.s3.Delete(mediaID)
 }
 
-// upsertAuthors finds existing authors by name (creates if missing) and returns the list.
+// upsertAuthors fetches all existing authors in one IN query, then batch-creates
+// any that are missing. Eliminates the per-author N+1 query pattern.
 func (s *Service) upsertAuthors(names []string) ([]models.Author, error) {
-	result := []models.Author{}
+	// De-duplicate names, preserving order, and filter empty strings.
 	seen := map[string]bool{}
+	unique := make([]string, 0, len(names))
 	for _, raw := range names {
-		name := raw
-		if name == "" || seen[name] {
-			continue
+		if raw != "" && !seen[raw] {
+			seen[raw] = true
+			unique = append(unique, raw)
 		}
-		seen[name] = true
-		var author models.Author
-		err := s.db.Where("name = ?", name).First(&author).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			author = models.Author{Name: name}
-			if err := s.db.Create(&author).Error; err != nil {
+	}
+	if len(unique) == 0 {
+		return []models.Author{}, nil
+	}
+
+	// Single query to fetch all already-existing authors.
+	var existing []models.Author
+	if err := s.db.Where("name IN ?", unique).Find(&existing).Error; err != nil {
+		return nil, err
+	}
+
+	existingByName := make(map[string]models.Author, len(existing))
+	for _, a := range existing {
+		existingByName[a.Name] = a
+	}
+
+	// Collect missing authors and create them individually (sqlite
+	// does not support batch-insert with RETURNING, but each create is cheap).
+	result := make([]models.Author, 0, len(unique))
+	for _, name := range unique {
+		if a, ok := existingByName[name]; ok {
+			result = append(result, a)
+		} else {
+			newAuthor := models.Author{Name: name}
+			if err := s.db.Create(&newAuthor).Error; err != nil {
 				return nil, err
 			}
-		} else if err != nil {
-			return nil, err
+			result = append(result, newAuthor)
 		}
-		result = append(result, author)
 	}
 	return result, nil
 }

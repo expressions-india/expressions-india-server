@@ -63,11 +63,39 @@ func initServer() *Server {
 	db := storage.InitDB()
 	s3 := storage.InitS3()
 
-	if os.Getenv("DB_FRESH_START") == "true" && os.Getenv("APP_ENV") == "development" {
-		db.Migrator().DropTable(
+	runMigrations := true
+	env := os.Getenv("APP_ENV")
+	if env == "production" || env == "staging" {
+		runMigrations = os.Getenv("RUN_MIGRATIONS") == "true"
+	}
+
+	if runMigrations {
+		fmt.Println("RUNNING DATABASE MIGRATIONS")
+		if os.Getenv("DB_FRESH_START") == "true" && env == "development" {
+			db.Migrator().DropTable(
+				&models.User{},
+				&models.Event{},
+				&models.Media{},
+				&models.Promotion{},
+				&models.Link{},
+				&models.Journal{},
+				&models.JournalChapter{},
+				&models.Author{},
+				&models.Podcast{},
+				&models.Enquiry{},
+				&models.Article{},
+				&models.Course{},
+				&models.CourseChapter{},
+				&models.Team{},
+				&models.Member{},
+				&models.Audience{},
+			)
+		}
+		err := db.AutoMigrate(
 			&models.User{},
 			&models.Event{},
 			&models.Media{},
+			&models.Audience{},
 			&models.Promotion{},
 			&models.Link{},
 			&models.Journal{},
@@ -80,35 +108,18 @@ func initServer() *Server {
 			&models.CourseChapter{},
 			&models.Team{},
 			&models.Member{},
-			&models.Audience{},
+			&models.Almanac{},
+			&models.Brochure{},
+			&models.CertificateApplication{},
 		)
-	}
-	err := db.AutoMigrate(
-		&models.User{},
-		&models.Event{},
-		&models.Media{},
-		&models.Audience{},
-		&models.Promotion{},
-		&models.Link{},
-		&models.Journal{},
-		&models.JournalChapter{},
-		&models.Author{},
-		&models.Podcast{},
-		&models.Enquiry{},
-		&models.Article{},
-		&models.Course{},
-		&models.CourseChapter{},
-		&models.Team{},
-		&models.Member{},
-		&models.Almanac{},
-		&models.Brochure{},
-		&models.CertificateApplication{},
-	)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+		if err != nil {
+			log.Fatal(err.Error())
+		}
 
-	models.SeedAudience(db)
+		models.SeedAudience(db)
+	} else {
+		fmt.Println("SKIPPING DATABASE MIGRATIONS")
+	}
 
 	eventService := event.NewService(db, s3)
 	eventController := event.NewController(eventService)
