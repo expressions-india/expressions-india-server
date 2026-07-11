@@ -2,7 +2,6 @@ package event
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -183,7 +182,15 @@ func (s *Service) CreateEvent(data *dto.EventCreateRequestDTO) error {
 	}
 	if data.IsPaid != nil {
 		newEvent.IsPaid = *data.IsPaid
-		newEvent.Price = data.Price
+		if *data.IsPaid {
+			if data.Price != nil {
+				newEvent.Price = data.Price
+			} else {
+				return utils.NewValidationError("price is required for paid events")
+			}
+		} else {
+			newEvent.Price = nil
+		}
 	}
 	if data.RegistrationURL != nil {
 		newEvent.RegistrationURL = *data.RegistrationURL
@@ -324,7 +331,7 @@ func (s *Service) UpdateEvent(id string, newData *dto.EventUpdateRequestDTO) err
 			if newData.Price != nil {
 				event.Price = newData.Price
 			} else {
-				return errors.New("price is required for paid events")
+				return utils.NewValidationError("price is required for paid events")
 			}
 		} else {
 			event.Price = nil

@@ -115,3 +115,15 @@ func SafeTotalPages(total int64, limit int) int {
 	}
 	return int(math.Ceil(float64(total) / float64(limit)))
 }
+
+type ValidationError struct {
+	Msg string
+}
+
+func (e ValidationError) Error() string {
+	return e.Msg
+}
+
+func NewValidationError(msg string) error {
+	return ValidationError{Msg: msg}
+}

@@ -35,6 +35,11 @@ func (ctrl *Controller) Create(c *gin.Context) {
 		return
 	}
 	if err := ctrl.service.CreateEvent(&newEvent); err != nil {
+		var valErr utils.ValidationError
+		if errors.As(err, &valErr) {
+			utils.Fail(c, http.StatusBadRequest, "VALIDATION_FAILED", valErr.Error())
+			return
+		}
 		utils.FailInternal(c, "CREATE_ERROR", "Could not create event", err)
 		return
 	}
@@ -67,6 +72,11 @@ func (ctrl *Controller) Update(c *gin.Context) {
 		return
 	}
 	if err := ctrl.service.UpdateEvent(id, &updateEvent); err != nil {
+		var valErr utils.ValidationError
+		if errors.As(err, &valErr) {
+			utils.Fail(c, http.StatusBadRequest, "VALIDATION_FAILED", valErr.Error())
+			return
+		}
 		utils.FailInternal(c, "UPDATE_FAILED", "Could not update event", err)
 		return
 	}
